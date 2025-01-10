@@ -27,8 +27,6 @@ async function getFare(pickup, destination) {
         car: 2,
         moto: 1
     };
-
-    console.log(distanceTime);
     
 
     const fare = {
@@ -63,7 +61,6 @@ module.exports.createRide = async ({
     }
 
     const fare = await getFare(pickup, destination);
-    console.log(fare);
     
 
     const ride = rideModel.create({

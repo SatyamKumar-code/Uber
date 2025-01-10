@@ -13,13 +13,10 @@ function initializeSocket(server) {
     });
 
     io.on('connection', (socket) => {
-        console.log(`Client connected: ${socket.id}`);
 
 
         socket.on('join', async (data) => {
             const { userId, userType } = data;
-
-            console.log(`User ${userId} jioned as ${userType}`);
 
             if (userType === 'user'){
                 await userModel.findByIdAndUpdate(userId, {socketId: socket.id });
@@ -42,16 +39,10 @@ function initializeSocket(server) {
             } });
         });
 
-        socket.on('disconnect', () => {
-            console.log(`Client disconnected: ${socket.id}`);
-        });
     });
 }
 
 function sendMessageToSocketId(socketId, messageObject) {
-
-    console.log(`Sending message to ${socketId}`, messageObject);
-    
 
     if (io) {
         io.to(socketId).emit(messageObject.event, messageObject.data);
