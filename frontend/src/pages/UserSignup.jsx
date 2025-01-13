@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios, { Axios } from 'axios'
 import { UserDataContext } from '../context/UserContext'
 import { useContext } from 'react'
-import { ToastContainer, toast } from 'react-toastify'
 
 
 const UserSignup = () => {
