@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios, { Axios } from 'axios'
 import { UserDataContext } from '../context/UserContext'
 import { useContext } from 'react'
+import { ToastContainer, toast } from 'react-toastify'
 
 
 const UserSignup = () => {
@@ -11,6 +12,7 @@ const UserSignup = () => {
     const [firstName, setFirstName] = useState('')
     const [lastName, setLastName] = useState('')
     const [userData, setUserData] = useState({})
+    const [error, setError] = useState('')
 
     const navigate = useNavigate()
 
@@ -19,6 +21,31 @@ const UserSignup = () => {
 
     const submitHandler = async (e) => {
         e.preventDefault()
+
+        if(password.length < 6) {
+            setError('Password must be at least 6 characters')
+            return;
+        }
+
+        if(!/[!@#$%^&*]/.test(password)) {
+            setError('Password must contain at least one special character')
+            return;
+        }
+
+        if(!/[0-9]/.test(password)) {
+            setError('Password must contain at least one number')
+            return;
+        }
+
+        if(!/[A-Z]/.test(password)) {
+            setError('Password must contain at least one uppercase letter')
+            return;
+        }
+        if(!error) {
+            setError('Email is already Axist')
+            return;
+        }
+
         const newUser = {
             fullname: {
                 firstname: firstName,
@@ -36,7 +63,7 @@ const UserSignup = () => {
             localStorage.setItem('token', data.token)
             navigate('/home')
         }
-
+        setError('')
         setEmail('')
         setFirstName('')
         setLastName('')
@@ -99,6 +126,10 @@ const UserSignup = () => {
                             }}
                         />
 
+                           {error && (
+                            <p className='text-red-500 font-medium text-sm text-center'>{error}</p>
+                           )}
+                        
                         <button
                             className='bg-[#111] text-white font-semibold mb-3 rounded px-4 py-2 w-full text-lg placeholder:text-base'
                         >Creat account</button>

@@ -6,8 +6,9 @@ import { CaptainDataContext } from '../context/CapatainContext'
 
 const Captainlogin = () => {
 
-  const [ email, setEmail ] = useState('')
-  const [ password, setPassword ] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
 
   const { captain, setCaptain } = React.useContext(CaptainDataContext)
   const navigate = useNavigate()
@@ -21,6 +22,11 @@ const Captainlogin = () => {
       password
     }
 
+    if (!error) {
+      setError('Email and Password is not Valid')
+      return;
+    }
+
     const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/login`, captain)
 
     if (response.status === 200) {
@@ -32,6 +38,7 @@ const Captainlogin = () => {
 
     }
 
+    setError('')
     setEmail('')
     setPassword('')
   }
@@ -66,6 +73,10 @@ const Captainlogin = () => {
             required type="password"
             placeholder='password'
           />
+
+          {error && (
+            <p className='text-red-500 font-medium text-sm text-center'>{error}</p>
+          )}
 
           <button
             className='bg-[#111] text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-lg placeholder:text-base'

@@ -13,6 +13,7 @@ import { useContext } from 'react'
 import { UserDataContext } from '../context/UserContext'
 import { useNavigate } from 'react-router-dom'
 import LiveTracking from '../components/LiveTracking'
+import { toast, ToastContainer } from 'react-toastify'
 
 const Home = () => {
     const [pickup, setPickup] = useState('')

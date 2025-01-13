@@ -17,6 +17,7 @@ const CaptainSignup = () => {
     const [vehiclePlate, setVehiclePlate] = useState('')
     const [vehicleCapacity, setVehicleCapacity] = useState('')
     const [vehicleType, setVehicleType] = useState('')
+    const [error, setError] = useState('')
 
 
     const { captain, setCaptain } = React.useContext(CaptainDataContext)
@@ -24,6 +25,31 @@ const CaptainSignup = () => {
 
     const submitHandler = async (e) => {
         e.preventDefault()
+
+        if(password.length < 6) {
+            setError('Password must be at least 6 characters')
+            return;
+        }
+
+        if(!/[!@#$%^&*]/.test(password)) {
+            setError('Password must contain at least one special character')
+            return;
+        }
+
+        if(!/[0-9]/.test(password)) {
+            setError('Password must contain at least one number')
+            return;
+        }
+
+        if(!/[A-Z]/.test(password)) {
+            setError('Password must contain at least one uppercase letter')
+            return;
+        }
+        if(!error) {
+            setError('Email is already Axist')
+            return;
+        }
+
         const captainData = {
             fullname: {
                 firstname: firstName,
@@ -162,6 +188,10 @@ const CaptainSignup = () => {
                                 <option value="moto">Moto</option>
                             </select>
                         </div>
+
+                        {error && (
+                            <p className='text-red-500 font-medium text-sm text-center'>{error}</p>
+                        )}
 
                         <button
                             className='bg-[#111] text-white font-semibold mb-3 rounded px-4 py-2 w-full text-lg placeholder:text-base'
