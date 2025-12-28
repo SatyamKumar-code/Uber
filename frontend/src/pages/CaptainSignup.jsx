@@ -3,11 +3,15 @@ import { Link } from 'react-router-dom'
 import { CaptainDataContext } from '../context/CapatainContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import CircularProgress from '@mui/material/CircularProgress';
+import Button from '@mui/material/Button';
+import { IoMdEye, IoMdEyeOff } from 'react-icons/io';
 
 const CaptainSignup = () => {
 
     const navigate = useNavigate()
 
+    const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [firstName, setFirstName] = useState('')
@@ -18,70 +22,82 @@ const CaptainSignup = () => {
     const [vehicleCapacity, setVehicleCapacity] = useState('')
     const [vehicleType, setVehicleType] = useState('')
     const [error, setError] = useState('')
+    const [isShowPassword, setIsShowPassword] = useState(false);
 
 
     const { captain, setCaptain } = React.useContext(CaptainDataContext)
 
 
     const submitHandler = async (e) => {
-        e.preventDefault()
+        try {
+            e.preventDefault()
+            setIsLoading(true);
 
-        if(password.length < 6) {
-            setError('Password must be at least 6 characters')
-            return;
-        }
-
-        if(!/[!@#$%^&*]/.test(password)) {
-            setError('Password must contain at least one special character')
-            return;
-        }
-
-        if(!/[0-9]/.test(password)) {
-            setError('Password must contain at least one number')
-            return;
-        }
-
-        if(!/[A-Z]/.test(password)) {
-            setError('Password must contain at least one uppercase letter')
-            return;
-        }
-        if(!error) {
-            setError('Email is already Axist')
-            return;
-        }
-
-        const captainData = {
-            fullname: {
-                firstname: firstName,
-                lastname: lastName
-            },
-            email: email,
-            password: password,
-            vehicle: {
-                color: vehicleColor,
-                plate: vehiclePlate,
-                capacity: vehicleCapacity,
-                vehicleType: vehicleType
+            if (password.length < 6) {
+                setError('Password must be at least 6 characters')
+                setIsLoading(false);
+                return;
             }
+
+            if (!/[!@#$%^&*]/.test(password)) {
+                setError('Password must contain at least one special character')
+                setIsLoading(false);
+                return;
+            }
+
+            if (!/[0-9]/.test(password)) {
+                setError('Password must contain at least one number')
+                setIsLoading(false);
+                return;
+            }
+
+            if (!/[A-Z]/.test(password)) {
+                setError('Password must contain at least one uppercase letter')
+                setIsLoading(false);
+                return;
+            }
+            
+
+            const captainData = {
+                fullname: {
+                    firstname: firstName,
+                    lastname: lastName
+                },
+                email: email,
+                password: password,
+                vehicle: {
+                    color: vehicleColor,
+                    plate: vehiclePlate,
+                    capacity: vehicleCapacity,
+                    vehicleType: vehicleType
+                }
+            }
+
+            const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/register`, captainData)
+
+            if (response.status === 201) {
+                const data = response.data
+                setCaptain(data.captain)
+                localStorage.setItem('token', data.token)
+                navigate('/captain-home')
+            }
+
+            setEmail('')
+            setFirstName('')
+            setLastName('')
+            setPassword('')
+            setVehicleColor('')
+            setVehiclePlate('')
+            setVehicleCapacity('')
+            setVehicleType('');
+            setIsLoading(false);
+
+        } catch (error) {
+            setIsLoading(false);
+            setError(error.response && error.response.data.message
+                ? error.response.data.message
+                : error.message)
         }
-
-        const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/register`, captainData)
-
-        if (response.status === 201) {
-            const data = response.data
-            setCaptain(data.captain)
-            localStorage.setItem('token', data.token)
-            navigate('/captain-home')
-        }
-
-        setEmail('')
-        setFirstName('')
-        setLastName('')
-        setPassword('')
-        setVehicleColor('')
-        setVehiclePlate('')
-        setVehicleCapacity('')
-        setVehicleType('');
     }
     return (
         <div>
@@ -129,16 +145,24 @@ const CaptainSignup = () => {
 
                         <h3 className='text-lg font-medium mb-2' >Enter Password</h3>
 
+                        <div className='relative'>
                         <input
                             className='bg-[#eeeeee] mb-6 rounded px-4 py-2 border w-full text-lg placeholder:text-base'
 
-                            required type="password"
+                            required type={isShowPassword === false ? "password" : "text"}
                             placeholder='password'
                             value={password}
                             onChange={(e) => {
                                 setPassword(e.target.value)
                             }}
                         />
+                        <Button className='!absolute top-[4px] right-[8px] z-50 !w-[40px] !h-[40px] !min-w-[40px] !rounded-full !text-black'
+                        onClick={()=> setIsShowPassword(!isShowPassword)}>
+                            {
+                                isShowPassword === false ? <IoMdEye className='text-[20px] opacity-75' /> : <IoMdEyeOff className='text-[20px] opacity-75' />
+                            }
+                        </Button>
+                        </div>
 
                         <h3 className='text-lg font-medium mb-2'>Vehicle Information</h3>
                         <div className='flex gap-4 mb-7'>
@@ -195,7 +219,13 @@ const CaptainSignup = () => {
 
                         <button
                             className='bg-[#111] text-white font-semibold mb-3 rounded px-4 py-2 w-full text-lg placeholder:text-base'
-                        >Create Captain Account</button>
+                        >
+                            {
+                                isLoading === true ? <CircularProgress color='inherit' size={18} />
+                                    :
+                                    "Create Captain Account"
+                            }
+                        </button>
 
                     </form>
                     <p className='text-center'>Already have account? <Link to='/captain-login' className='text-blue-600'>Login here</Link></p>

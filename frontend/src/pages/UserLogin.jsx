@@ -3,12 +3,17 @@ import { Link } from 'react-router-dom'
 import { UserDataContext } from '../context/UserContext'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import CircularProgress from '@mui/material/CircularProgress';
+import Button from '@mui/material/Button';
+import { IoMdEye, IoMdEyeOff } from 'react-icons/io';
 
 const UserLogin = () => {
+    const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [userData, setUserData] = useState({})
     const [error, setError] = useState('')
+    const [isShowPassword, setIsShowPassword] = useState(false);
 
     const { user, setUser } = useContext(UserDataContext)
     const navigate = useNavigate()
@@ -16,20 +21,24 @@ const UserLogin = () => {
 
 
     const submitHandler = async (e) => {
-        e.preventDefault();
+        try {
+            e.preventDefault();
 
-        if (!error) {
-            setError('Email and Password is not Valid')
-            return;
-        }
+        setIsLoading(true);
+
+        // if (!error) {
+        //     setIsLoading(false);
+        //     setError('Email and Password is not Valid')
+        //     return;
+        // }
 
         const userData = {
             email: email,
             password: password
         }
-
-        const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/login`, userData)
-
+        
+        const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/users/login`, userData);
+        
 
         if (response.status === 200) {
             const data = response.data
@@ -40,6 +49,13 @@ const UserLogin = () => {
         setError('')
         setEmail('')
         setPassword('')
+        setIsLoading(false);
+        } catch (error) {
+            setIsLoading(false);
+            setError(error.response && error.response.data.message
+                ? error.response.data.message
+                : error.message)
+        }
     }
 
     return (
@@ -63,16 +79,24 @@ const UserLogin = () => {
                     />
 
                     <h3 className='text-lg font-medium mb-2' >Enter Password</h3>
-
+                    
+                    <div className='relative'>
                     <input
                         className='bg-[#eeeeee] mb-7 rounded px-4 py-2 border w-full text-lg placeholder:text-base'
                         value={password}
                         onChange={(e) => {
                             setPassword(e.target.value)
                         }}
-                        required type="password"
+                        required  type={isShowPassword===false ? 'password' : 'text'}
                         placeholder='password'
                     />
+                     <Button className='!absolute top-[4px] right-[8px] z-50 !w-[40px] !h-[40px] !min-w-[40px] !rounded-full !text-black'
+                        onClick={()=> setIsShowPassword(!isShowPassword)}>
+                            {
+                                isShowPassword === false ? <IoMdEye className='text-[20px] opacity-75' /> : <IoMdEyeOff className='text-[20px] opacity-75' />
+                            }
+                        </Button>
+                    </div>
 
                     {error && (
                         <p className='text-red-500 font-medium text-sm text-center'>{error}</p>
@@ -80,7 +104,14 @@ const UserLogin = () => {
 
                     <button
                         className='bg-[#111] text-white font-semibold mb-3 rounded px-4 py-2 w-full text-lg placeholder:text-base'
-                    >Login</button>
+                        
+                    >
+                        {
+                            isLoading === true ? <CircularProgress color='inherit' size={18} />
+                                :
+                                "Login"
+                        }
+                    </button>
 
                 </form>
                 <p className='text-center'>New hear? <Link to='/signup' className='text-blue-600'>Create new Account</Link></p>
