@@ -192,18 +192,12 @@ const Home = () => {
     }
 
     return (
-        <div className='h-screenrelative overflow-hidden'>
+        <div className='h-screen relative overflow-hidden'>
             <img className='w-16 absolute left-5 top-5' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" alt="" />
-            <div className='h-screen w-screen'>
-                {/* image for temporary use  */}
-                {/* <LiveTracking /> */}
-                <div className='h-[65%]'>
-                    <img className='h-full w-full object-cover' src="https://miro.medium.com/v2/resize:fit:1400/0*gwMx05pqII5hbfmX.gif" alt="" />
 
-                </div>
-            </div>
-            <div className=' flex flex-col justify-end h-screen absolute top-0 w-full'>
-                <div className='h-[35%] p-6 bg-white relative'>
+            {/* All panels and overlays above map */}
+            <div className={`flex flex-col justify-end h-screen absolute top-0 w-full pointer-events-none ${ panelOpen ? 'z-20' : 'z-0'}`}>
+                <div className='h-[35%] p-6 bg-white relative pointer-events-auto'>
                     <h5 ref={panelCloseRef} onClick={() => {
                         setPanelOpen(false)
                     }} className='absolute opacity-0 right-6 top-6 text-2xl'>
@@ -283,6 +277,11 @@ const Home = () => {
                     setVehicleFound={setVehicleFound}
                     setWaitingForDriver={setWaitingForDriver}
                     waitingForDriver={waitingForDriver} />
+            </div>
+
+            {/* Map always at the bottom */}
+            <div className='h-[65%] w-screen absolute top-0 left-0 z-0'>
+                <LiveTracking className="h-full w-full" />
             </div>
         </div>
     )
