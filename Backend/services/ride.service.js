@@ -3,13 +3,33 @@ const mapService = require('./maps.service');
 const crypto = require('crypto');
 
 async function getFare(pickup, destination) {
-    
+
     if (!pickup || !destination) {
         throw new Error('Pickup and destination are required');
     }
 
-    const distanceTime = await mapService.getDistanceTime(pickup, destination);
-    
+    // If pickup or destination are not in 'lat,lng' format, geocode them
+    function isLatLng(str) {
+        if (typeof str !== 'string') return false;
+        const parts = str.split(',');
+        if (parts.length !== 2) return false;
+        return !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]));
+    }
+
+    let pickupCoord = pickup;
+    let destinationCoord = destination;
+
+    if (!isLatLng(pickup)) {
+        const geo = await mapService.getAddressCoordinate(pickup);
+        pickupCoord = `${geo.ltd},${geo.lng}`;
+    }
+    if (!isLatLng(destination)) {
+        const geo = await mapService.getAddressCoordinate(destination);
+        destinationCoord = `${geo.ltd},${geo.lng}`;
+    }
+
+    const distanceTime = await mapService.getDistanceTime(pickupCoord, destinationCoord);
+
     const baseFare = {
         auto: 20,
         car: 30,
@@ -27,7 +47,7 @@ async function getFare(pickup, destination) {
         car: 2,
         moto: 1
     };
-    
+
 
     const fare = {
         auto: Math.round(baseFare.auto + ((distanceTime.distance.value / 1000) * perKmRate.auto) + ((distanceTime.duration.value / 60) * perMinuteRate.auto)),
@@ -55,24 +75,24 @@ function getOtp(num) {
 
 module.exports.createRide = async ({
     user, pickup, destination, vehicleType
- }) => { 
+}) => {
     if (!user || !pickup || !destination || !vehicleType) {
         throw new Error('All field are required');
     }
 
     const fare = await getFare(pickup, destination);
-    
+
 
     const ride = rideModel.create({
         user,
         pickup,
         destination,
         otp: getOtp(6),
-        fare: fare[ vehicleType ],
+        fare: fare[vehicleType],
     });
 
     return ride;
- }
+}
 
 module.exports.confirmRide = async ({
     rideId, captain
@@ -98,9 +118,9 @@ module.exports.confirmRide = async ({
 
     return ride;
 
- }
+}
 
- module.exports.startRide = async ({ rideId, otp, captain }) => {
+module.exports.startRide = async ({ rideId, otp, captain }) => {
     if (!rideId || !otp) {
         throw new Error('Ride id and otp are required');
     }
@@ -129,7 +149,7 @@ module.exports.confirmRide = async ({
 
     return ride;
 
- }
+}
 
 module.exports.endRide = async ({ rideId, captain }) => {
     if (!rideId) {
