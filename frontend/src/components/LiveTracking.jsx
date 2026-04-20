@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 // import { LoadScript, GoogleMap, Marker } from '@react-google-maps/api'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
-import "leaflet/dist/leaflet.css"
+
 
 const containerStyle = {
     width: '100%',
