@@ -66,8 +66,6 @@ const LiveTracking = ({ className }) => {
         const updatePosition = () => {
             navigator.geolocation.getCurrentPosition((position) => {
                 const { latitude, longitude } = position.coords;
-
-                console.log('Position updated:', latitude, longitude);
                 setCurrentPosition({
                     lat: latitude,
                     lng: longitude
