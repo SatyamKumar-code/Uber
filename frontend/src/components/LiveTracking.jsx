@@ -109,6 +109,17 @@ const LiveTracking = ({ className, pickup, drop }) => {
         }
     }, [pickup, drop, currentPosition]);
 
+    // Car icon for user-side captain marker
+    const carIcon = {
+        url: 'https://png.pngtree.com/png-vector/20230110/ourmid/pngtree-sedan-car-top-view-image-png-image_6558830.png', // You can use any car image URL
+        scaledSize: { width: 40, height: 40 }
+    };
+
+    const pickupIcon = {
+        url: '/pickup.png',
+        scaledSize: { width: 40, height: 40 }
+    };
+
     return (
         <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
             <GoogleMap
@@ -116,9 +127,9 @@ const LiveTracking = ({ className, pickup, drop }) => {
                 center={currentPosition}
                 zoom={15}
             >
-                <Marker position={currentPosition} label="You" />
+                <Marker position={currentPosition} label="You" icon={carIcon} />
                 {pickup && pickup.lat && pickup.lng && (
-                    <Marker position={pickup} label="Pickup" />
+                    <Marker position={pickup} icon={pickupIcon} />
                 )}
                 {drop && drop.lat && drop.lng && (
                     <Marker position={drop} label="Drop" />
