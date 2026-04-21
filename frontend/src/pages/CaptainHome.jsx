@@ -16,7 +16,9 @@ import LiveTracking from '../components/LiveTracking'
 const CaptainHome = () => {
 
     const [ridePopupPanel, setRidePopupPanel] = useState(false)
-    const [confirmRidePopupPanel, setConfirmRidePopupPanel] = useState(false)
+    const [showDropRoute, setShowDropRoute] = useState(false)
+    const [currentPosition, setCurrentPosition] = useState(null)
+    const [isNearPickup, setIsNearPickup] = useState(false);
 
     const ridePopupPanelRef = React.useRef(null)
     const confirmRidePopupPanelRef = React.useRef(null)
@@ -26,7 +28,49 @@ const CaptainHome = () => {
     const { captain } = useContext(CaptainDataContext)
 
 
+    // Track captain's current position
     useEffect(() => {
+        const updatePosition = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    setCurrentPosition({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    });
+                });
+            }
+        };
+        updatePosition();
+        const intervalId = setInterval(updatePosition, 2000);
+        return () => clearInterval(intervalId);
+    }, []);
+
+    // Show ConfirmRidePopUp only when within 100 meters of pickup
+    useEffect(() => {
+        if (!ride || !currentPosition || !ride.pickup || showDropRoute) {
+            setIsNearPickup(false);
+            return;
+        }
+        if (typeof ride.pickup === 'string' && ride.pickup.includes(',')) {
+            const [pickupLat, pickupLng] = ride.pickup.split(',').map(Number);
+            const toRad = x => x * Math.PI / 180;
+            const R = 6371e3; // meters
+            const dLat = toRad(currentPosition.lat - pickupLat);
+            const dLng = toRad(currentPosition.lng - pickupLng);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(toRad(pickupLat)) * Math.cos(toRad(currentPosition.lat)) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c;
+            setIsNearPickup(distance <= 100);
+        } else {
+            setIsNearPickup(false);
+        }
+    }, [ride, currentPosition, showDropRoute]);
+    useEffect(() => {
+        if (!socket || !captain?._id) return;
+
+
         socket.emit('join', {
             userId: captain._id,
             userType: 'captain'
@@ -70,22 +114,21 @@ const CaptainHome = () => {
     }, [socket, captain._id]);
 
     async function confirmRide() {
-
         const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/rides/confirm`, {
-
             rideId: ride._id,
-            captainId: captain._id,
-
-
+            captainId: captain._id
         }, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
             }
         })
-
         setRidePopupPanel(false)
-        setConfirmRidePopupPanel(true)
+        // ConfirmRidePopUp will open automatically when within 10 meters
+    }
 
+    // After OTP confirmation, show route to drop location
+    function handleOtpConfirmed() {
+        setShowDropRoute(true);
     }
 
     useGSAP(function () {
@@ -100,17 +143,7 @@ const CaptainHome = () => {
         }
     }, [ridePopupPanel])
 
-    useGSAP(function () {
-        if (confirmRidePopupPanel) {
-            gsap.to(confirmRidePopupPanelRef.current, {
-                transform: 'translateY(0)'
-            })
-        } else {
-            gsap.to(confirmRidePopupPanelRef.current, {
-                transform: 'translateY(100%)'
-            })
-        }
-    }, [confirmRidePopupPanel])
+
 
     return (
         <div className='h-screen'>
@@ -124,10 +157,22 @@ const CaptainHome = () => {
                 {/* <img className='h-full w-full object-cover' src="https://miro.medium.com/v2/resize:fit:1400/0*gwMx05pqII5hbfmX.gif" alt="" /> */}
                 <LiveTracking
                     className="h-full w-full"
-                    pickup={ride && confirmRidePopupPanel && ride.pickup && typeof ride.pickup === 'string' && ride.pickup.includes(',') ? {
-                        lat: Number(ride.pickup.split(',')[0]),
-                        lng: Number(ride.pickup.split(',')[1])
-                    } : null}
+                    pickup={
+                        ride && !showDropRoute && ride.pickup && typeof ride.pickup === 'string' && ride.pickup.includes(',')
+                            ? {
+                                lat: Number(ride.pickup.split(',')[0]),
+                                lng: Number(ride.pickup.split(',')[1])
+                            }
+                            : null
+                    }
+                    drop={
+                        ride && showDropRoute && ride.destination && typeof ride.destination === 'string' && ride.destination.includes(',')
+                            ? {
+                                lat: Number(ride.destination.split(',')[0]),
+                                lng: Number(ride.destination.split(',')[1])
+                            }
+                            : null
+                    }
                 />
             </div>
             <div className='h-2/5 p-6'>
@@ -137,15 +182,20 @@ const CaptainHome = () => {
                 <RidePopUp
                     ride={ride}
                     setRidePopupPanel={setRidePopupPanel}
-                    setConfirnRidePopupPanel={setConfirmRidePopupPanel}
+                    setConfirnRidePopupPanel={() => { }}
                     confirmRide={confirmRide}
                 />
             </div>
-            <div ref={confirmRidePopupPanelRef} className='fixed w-full h-screen z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12'>
-                <ConfirmRidePopUp
-                    ride={ride}
-                    setConfirnRidePopupPanel={setConfirmRidePopupPanel} setRidePopupPanel={setRidePopupPanel} />
-            </div>
+            {isNearPickup && !showDropRoute && (
+                <div ref={confirmRidePopupPanelRef} className='fixed w-full h-screen z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12'>
+                    <ConfirmRidePopUp
+                        ride={ride}
+                        setConfirnRidePopupPanel={() => { }}
+                        setRidePopupPanel={setRidePopupPanel}
+                        onOtpConfirmed={handleOtpConfirmed}
+                    />
+                </div>
+            )}
         </div>
     )
 }

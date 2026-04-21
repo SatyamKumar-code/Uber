@@ -18,9 +18,10 @@ const ConfirmRidePopUp = (props) => {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`
             }
-        }) 
+        })
 
         if (response.status === 200) {
+            if (props.onOtpConfirmed) props.onOtpConfirmed();
             props.setConfirnRidePopupPanel(false)
             props.setRidePopupPanel(false)
             navigate('/captain-riding', { state: { ride: props.ride } })

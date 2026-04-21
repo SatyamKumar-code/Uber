@@ -13,7 +13,7 @@ const center = {
     lng: -38.523
 };
 
-const LiveTracking = ({ className, pickup }) => {
+const LiveTracking = ({ className, pickup, drop }) => {
     const [currentPosition, setCurrentPosition] = useState(center);
     const [directions, setDirections] = useState(null);
 
@@ -82,12 +82,18 @@ const LiveTracking = ({ className, pickup }) => {
     }, []);
 
     useEffect(() => {
-        if (pickup && pickup.lat && pickup.lng && currentPosition.lat && currentPosition.lng) {
+        let destination = null;
+        if (drop && drop.lat && drop.lng) {
+            destination = drop;
+        } else if (pickup && pickup.lat && pickup.lng) {
+            destination = pickup;
+        }
+        if (destination && currentPosition.lat && currentPosition.lng) {
             const directionsService = new window.google.maps.DirectionsService();
             directionsService.route(
                 {
                     origin: { lat: currentPosition.lat, lng: currentPosition.lng },
-                    destination: { lat: pickup.lat, lng: pickup.lng },
+                    destination: { lat: destination.lat, lng: destination.lng },
                     travelMode: window.google.maps.TravelMode.DRIVING,
                 },
                 (result, status) => {
@@ -101,7 +107,7 @@ const LiveTracking = ({ className, pickup }) => {
         } else {
             setDirections(null);
         }
-    }, [pickup, currentPosition]);
+    }, [pickup, drop, currentPosition]);
 
     return (
         <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
@@ -113,6 +119,9 @@ const LiveTracking = ({ className, pickup }) => {
                 <Marker position={currentPosition} label="You" />
                 {pickup && pickup.lat && pickup.lng && (
                     <Marker position={pickup} label="Pickup" />
+                )}
+                {drop && drop.lat && drop.lng && (
+                    <Marker position={drop} label="Drop" />
                 )}
                 {directions && <DirectionsRenderer directions={directions} />}
             </GoogleMap>
