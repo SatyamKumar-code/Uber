@@ -18,9 +18,9 @@ function initializeSocket(server) {
         socket.on('join', async (data) => {
             const { userId, userType } = data;
 
-            if (userType === 'user'){
-                await userModel.findByIdAndUpdate(userId, {socketId: socket.id });
-                
+            if (userType === 'user') {
+                await userModel.findByIdAndUpdate(userId, { socketId: socket.id });
+
             } else if (userType === 'captain') {
                 await captainModel.findByIdAndUpdate(userId, { socketId: socket.id });
             }
@@ -30,13 +30,33 @@ function initializeSocket(server) {
             const { userId, location } = data;
 
             if (!location || !location.ltd || !location.lng) {
+                console.log('Invalid location data:', location);
                 return socket.emit('error', { message: 'Invalid location data' });
             }
 
-            await captainModel.findByIdAndUpdate(userId, { location:{
-                ltd: location.ltd,
-                lng: location.lng
-            } });
+            await captainModel.findByIdAndUpdate(userId, {
+                location: {
+                    ltd: location.ltd,
+                    lng: location.lng
+                }
+            });
+
+            // Emit live location to user if ride is accepted or ongoing
+            const rideModel = require('./models/ride.model');
+            const ride = await rideModel.findOne({ captain: userId, status: { $in: ['accepted', 'ongoing'] } }).populate('user');
+            if (ride && ride.user && ride.user.socketId) {
+                sendMessageToSocketId(ride.user.socketId, {
+                    event: 'captain-location',
+                    data: {
+                        captainId: userId,
+                        location: {
+                            ltd: location.ltd,
+                            lng: location.lng
+                        },
+                        rideId: ride._id
+                    }
+                });
+            }
         });
 
     });

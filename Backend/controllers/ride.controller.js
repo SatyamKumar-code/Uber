@@ -10,16 +10,16 @@ module.exports.createRide = async (req, res) => {
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-    
+
     const { userId, pickup, destination, vehicleType } = req.body;
 
     try {
         const ride = await rideService.createRide({ user: req.user._id, pickup, destination, vehicleType });
         res.status(201).json(ride);
-       
+
+
 
         const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
-        
 
         const captainsInRadius = await mapService.getCaptainsInTheRadius(pickupCoordinates.ltd, pickupCoordinates.lng, 40);
 
@@ -28,13 +28,10 @@ module.exports.createRide = async (req, res) => {
         const rideWithUser = await rideModel.findOne({ _id: ride._id }).populate('user');
 
         captainsInRadius.map(captain => {
-            
-
             sendMessageToSocketId(captain.socketId, {
                 event: 'new-ride',
                 data: rideWithUser
-            }
-            )
+            })
         })
 
     } catch (error) {
@@ -68,16 +65,29 @@ module.exports.confirmRide = async (req, res) => {
     const { rideId } = req.body;
 
     try {
-        const ride = await rideService.confirmRide({ rideId,captain: req.captain});
+        const ride = await rideService.confirmRide({ rideId, captain: req.captain });
 
+        // Notify user
         sendMessageToSocketId(ride.user.socketId, {
             event: 'ride-confirmed',
             data: ride
         });
 
+        // Notify all other captains who got this ride to close their popup
+        // Find all captains in radius (same logic as createRide)
+        const pickupCoordinates = await require('../services/maps.service').getAddressCoordinate(ride.pickup);
+        const captainsInRadius = await require('../services/maps.service').getCaptainsInTheRadius(pickupCoordinates.ltd, pickupCoordinates.lng, 40);
+        captainsInRadius.forEach(captain => {
+            if (!captain._id.equals(req.captain._id)) {
+                sendMessageToSocketId(captain.socketId, {
+                    event: 'ride-closed',
+                    data: { rideId }
+                });
+            }
+        });
+
         return res.status(200).json(ride);
     } catch (error) {
-
         console.log(error);
         return res.status(500).json({ message: error.message });
     }
@@ -102,7 +112,7 @@ module.exports.startRide = async (req, res) => {
         return res.status(200).json(ride);
     } catch (error) {
         console.log(error);
-        
+
         return res.status(500).json({ message: error.message });
     }
 }
@@ -112,10 +122,10 @@ module.exports.endRide = async (req, res) => {
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-    
+
 
     const { rideId } = req.body;
-    
+
 
     try {
         const ride = await rideService.endRide({ rideId, captain: req.captain });

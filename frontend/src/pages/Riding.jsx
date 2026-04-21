@@ -11,9 +11,29 @@ const Riding = () => {
     const { socket } = useContext(SocketContext)
     const navigate = useNavigate()
 
-    socket.on('ride-ended', () => {
-        navigate('/home')
-    })
+    useEffect(() => {
+        const handleRideEnded = () => {
+            navigate('/home');
+        };
+        socket.on('ride-ended', handleRideEnded);
+        return () => {
+            socket.off('ride-ended', handleRideEnded);
+        };
+    }, [socket, navigate]);
+
+    // Captain live location for user
+    const [captainLocation, setCaptainLocation] = React.useState(null);
+    useEffect(() => {
+        const handleCaptainLocation = (data) => {
+            if (data && data.captainId === ride?.captain?._id) {
+                setCaptainLocation({ lat: data.location.ltd, lng: data.location.lng });
+            }
+        };
+        socket.on('captain-location', handleCaptainLocation);
+        return () => {
+            socket.off('captain-location', handleCaptainLocation);
+        };
+    }, [socket, ride]);
 
     return (
         <div className='h-screen'>
@@ -21,8 +41,8 @@ const Riding = () => {
                 <i className='text-lg font-medium ri-home-5-line'></i>
             </Link>
             <div className='h-1/2'>
-                    {/* <img className='h-full w-full object-cover' src="https://miro.medium.com/v2/resize:fit:1400/0*gwMx05pqII5hbfmX.gif" alt="" /> */}
-                    <LiveTracking className="h-full w-full"/>
+                {/* <img className='h-full w-full object-cover' src="https://miro.medium.com/v2/resize:fit:1400/0*gwMx05pqII5hbfmX.gif" alt="" /> */}
+                <LiveTracking className="h-full w-full" pickup={captainLocation} />
             </div>
             <div className='h-1/2 p-4'>
                 <div className='flex items-center justify-between'>
@@ -36,7 +56,7 @@ const Riding = () => {
 
                 <div className='flex gap-2 justify-between flex-col items-center'>
                     <div className='w-full mt-5'>
-                        
+
                         <div className='flex items-center gap-5 p-3 border-b-2'>
                             <i className='text-lg ri-map-pin-2-fill'></i>
                             <div>

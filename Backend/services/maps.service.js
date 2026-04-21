@@ -64,7 +64,7 @@ module.exports.getAutoCompleteSuggestions = async (input) => {
     if (!input) {
         throw new Error('query is required');
     }
-    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(input)}&limit=5`;
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(input)}&limit=7`;
     try {
         const response = await axios.get(url);
         if (response.data && response.data.features) {
@@ -82,13 +82,22 @@ module.exports.getAutoCompleteSuggestions = async (input) => {
 };
 
 module.exports.getCaptainsInTheRadius = async (ltd, lng, radius) => {
-    // Radius in km
-    const captains = await captainModel.find({
-        location: {
-            $geoWithin: {
-                $centerSphere: [[lng, ltd], radius / 6371] // [lng, lat] for GeoJSON
-            }
-        }
+    // Manual Haversine filtering since location is not GeoJSON
+    const allCaptains = await captainModel.find({ 'location.ltd': { $exists: true }, 'location.lng': { $exists: true } });
+    function toRad(x) { return x * Math.PI / 180; }
+    const R = 6371; // km
+    const filtered = allCaptains.filter(captain => {
+        const clat = captain.location.ltd;
+        const clng = captain.location.lng;
+        if (typeof clat !== 'number' || typeof clng !== 'number') return false;
+        const dLat = toRad(clat - ltd);
+        const dLon = toRad(clng - lng);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRad(ltd)) * Math.cos(toRad(clat)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+        return distance <= radius;
     });
-    return captains;
+    return filtered;
 };

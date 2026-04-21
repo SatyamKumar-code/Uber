@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { LoadScript, GoogleMap, Marker } from '@react-google-maps/api'
+import { LoadScript, GoogleMap, Marker, DirectionsService, DirectionsRenderer } from '@react-google-maps/api'
 // import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 
 
@@ -13,8 +13,9 @@ const center = {
     lng: -38.523
 };
 
-const LiveTracking = ({ className }) => {
+const LiveTracking = ({ className, pickup }) => {
     const [currentPosition, setCurrentPosition] = useState(center);
+    const [directions, setDirections] = useState(null);
 
     function RecenterMap({ currentPosition }) {
         if (currentPosition) {
@@ -80,6 +81,28 @@ const LiveTracking = ({ className }) => {
 
     }, []);
 
+    useEffect(() => {
+        if (pickup && pickup.lat && pickup.lng && currentPosition.lat && currentPosition.lng) {
+            const directionsService = new window.google.maps.DirectionsService();
+            directionsService.route(
+                {
+                    origin: { lat: currentPosition.lat, lng: currentPosition.lng },
+                    destination: { lat: pickup.lat, lng: pickup.lng },
+                    travelMode: window.google.maps.TravelMode.DRIVING,
+                },
+                (result, status) => {
+                    if (status === window.google.maps.DirectionsStatus.OK) {
+                        setDirections(result);
+                    } else {
+                        setDirections(null);
+                    }
+                }
+            );
+        } else {
+            setDirections(null);
+        }
+    }, [pickup, currentPosition]);
+
     return (
         <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
             <GoogleMap
@@ -87,7 +110,11 @@ const LiveTracking = ({ className }) => {
                 center={currentPosition}
                 zoom={15}
             >
-                <Marker position={currentPosition} />
+                <Marker position={currentPosition} label="You" />
+                {pickup && pickup.lat && pickup.lng && (
+                    <Marker position={pickup} label="Pickup" />
+                )}
+                {directions && <DirectionsRenderer directions={directions} />}
             </GoogleMap>
         </LoadScript>
 

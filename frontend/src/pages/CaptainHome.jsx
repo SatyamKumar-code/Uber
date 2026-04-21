@@ -25,38 +25,49 @@ const CaptainHome = () => {
     const { socket } = useContext(SocketContext)
     const { captain } = useContext(CaptainDataContext)
 
+
     useEffect(() => {
         socket.emit('join', {
             userId: captain._id,
             userType: 'captain'
-        })
+        });
 
         const updateLocation = () => {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(position => {
-
                     socket.emit('update-location-captain', {
                         userId: captain._id,
                         location: {
                             ltd: position.coords.latitude,
                             lng: position.coords.longitude
                         }
-                    })
-                })
+                    });
+                });
             }
-        }
-        const locationInterval = setInterval(updateLocation, 10000)
-        updateLocation()
+        };
+        const locationInterval = setInterval(updateLocation, 10000);
+        updateLocation();
 
-        // return () => clearInterval(locationInterval)
-    })
+        // Listen for new-ride event
+        const handleNewRide = (data) => {
+            setRide(data);
+            setRidePopupPanel(true);
+        };
+        socket.on('new-ride', handleNewRide);
 
-    socket.on('new-ride', (data) => {
-        setRide(data)
-        setRidePopupPanel(true)
+        // Listen for ride-closed event
+        const handleRideClosed = (data) => {
+            setRidePopupPanel(false);
+        };
+        socket.on('ride-closed', handleRideClosed);
 
-
-    });
+        // Cleanup
+        return () => {
+            clearInterval(locationInterval);
+            socket.off('new-ride', handleNewRide);
+            socket.off('ride-closed', handleRideClosed);
+        };
+    }, [socket, captain._id]);
 
     async function confirmRide() {
 
@@ -111,7 +122,13 @@ const CaptainHome = () => {
             </div>
             <div className='h-3/5'>
                 {/* <img className='h-full w-full object-cover' src="https://miro.medium.com/v2/resize:fit:1400/0*gwMx05pqII5hbfmX.gif" alt="" /> */}
-                <LiveTracking className="h-full w-full"/>
+                <LiveTracking
+                    className="h-full w-full"
+                    pickup={ride && confirmRidePopupPanel && ride.pickup && typeof ride.pickup === 'string' && ride.pickup.includes(',') ? {
+                        lat: Number(ride.pickup.split(',')[0]),
+                        lng: Number(ride.pickup.split(',')[1])
+                    } : null}
+                />
             </div>
             <div className='h-2/5 p-6'>
                 <CaptainDetails />
